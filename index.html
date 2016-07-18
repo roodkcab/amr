@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+	<meta charset="UTF-8">
+	<script src="js/zepto.min.js"></script>
+	<script src="js/amrnb.js"></script>
+	<script src="js/pcmdata.js"></script>
+</head>
+<body>
+<input type="button" value="play" id="play"/>
+<input type="button" value="stop" id="stop"/>
+<div id="time"></div>
+<style>#audio {
+	width: 100%;
+	height: 10%;
+	/*display: hidden;*/
+	}</style>
+<audio id="audio" controls="controls"></audio>
+</body>
+<script type="text/javascript">
+
+	var time;
+	var audio = $("#audio");
+	addEventListener('touchstart', function (e) {
+			audio[0].play();
+			audio[0].pause();
+			});
+
+function playPcm(pcmStream) {
+	function IsAndroid() {
+		return navigator.userAgent.indexOf("Android") != -1;
+	}
+	var pcm = PCMData.encode({sampleRate: 8000, channelCount: 1, bytesPerSample: 2, data: pcmStream});
+	$("#time").html(Date.now() - time);
+	var source = $('<source src="' + "data:audio/mpeg;base64," + btoa(pcm) + '">');
+	audio.append(source);
+	audio[0].play();
+}
+
+function readBlob(blob, callback) {
+	var reader = new FileReader();
+	reader.onload = function(e) {
+		var data = new Uint8Array(e.target.result);
+		callback(data);
+	};
+	reader.readAsArrayBuffer(blob);
+}
+
+function load_binary_resource(url) {
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', url, true);
+	xhr.responseType = 'blob';
+	xhr.onload = function(e) {
+		if (this.status == 200) {
+			var blob = this.response;
+			time = Date.now();
+			readBlob(blob, function(data) {
+					var samples = AMR.decode(data);
+					playPcm(samples);
+					});
+		}
+	};
+	xhr.send();
+}
+
+$("#play").click(function() {
+		load_binary_resource('./test1.amr');
+		});
+
+$("#stop").click(function() {
+		});
+</script>
+</html>
